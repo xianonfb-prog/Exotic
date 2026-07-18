@@ -191,10 +191,10 @@ public class PassiveListener implements Listener {
 
     @EventHandler
     public void onRaidStop(RaidStopEvent event) {
-        if (event.getStatus() != RaidStopEvent.Status.VICTORY) return;
-        Location center = event.getRaid().getLocation();
-        for (Player player : center.getWorld().getPlayers()) {
-            if (player.getLocation().distanceSquared(center) <= 64 * 64) {
+        if (event.getRaid().getStatus() != org.bukkit.Raid.RaidStatus.VICTORY) return;
+        for (java.util.UUID heroId : event.getRaid().getHeroes()) {
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(heroId);
+            if (player != null) {
                 plugin.trials().progress(player, TrialSystem.ObjectiveType.RAID_WON, 1);
             }
         }
