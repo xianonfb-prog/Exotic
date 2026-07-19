@@ -18,10 +18,12 @@ import java.util.UUID;
 public class PassiveTickTask extends BukkitRunnable {
 
     private final ExoticPlugin plugin;
+    private final CombatListener combat;
     private static final UUID KITTY_HEALTH_MOD = UUID.fromString("a1b2c3d4-0000-4000-8000-000000000001");
 
-    public PassiveTickTask(ExoticPlugin plugin) {
+    public PassiveTickTask(ExoticPlugin plugin, CombatListener combat) {
         this.plugin = plugin;
+        this.combat = combat;
     }
 
     @Override
@@ -67,14 +69,37 @@ public class PassiveTickTask extends BukkitRunnable {
     }
 
     private void updateActionBar(Player player) {
-        SwordType held = SwordUtil.heldSword(player);
-        if (held == null) return;
+        String itemId = SwordUtil.getSwordId(player.getInventory().getItemInMainHand());
+        if (itemId == null) return;
 
-        long remaining = plugin.cooldowns().remainingMs(player.getUniqueId(), held.id());
-        Component status = remaining > 0
-                ? Component.text(held.displayName() + " - Cooldown: " + (remaining / 1000 + 1) + "s", NamedTextColor.RED)
-                : Component.text(held.displayName() + " - Ready (Shift + Right-Click)", NamedTextColor.GREEN);
+        ExoticItem item = ExoticItem.byId(itemId);
+        if (item == null) return;
+
+        String name = TextStyle.toSmallCaps(item.displayName());
+        long remaining = plugin.cooldowns().remainingMs(player.getUniqueId(), itemId);
+        boolean active = isCurrentlyActive(player.getUniqueId(), itemId);
+
+        Component status;
+        if (active) {
+            status = Component.text(name + " - (Active)", NamedTextColor.LIGHT_PURPLE);
+        } else if (remaining > 0) {
+            status = Component.text(name + " - Cooldown: " + (remaining / 1000 + 1) + "s", NamedTextColor.RED);
+        } else {
+            status = Component.text(name + " - Ready (Shift + Right-Click)", NamedTextColor.GREEN);
+        }
 
         player.sendActionBar(status);
+    }
+
+    private boolean isCurrentlyActive(UUID uuid, String itemId) {
+        long now = System.currentTimeMillis();
+        return switch (itemId) {
+            case "sword1" -> combat.retributionActive.getOrDefault(uuid, 0L) > now;
+            case "sword2" -> combat.swarmActive.getOrDefault(uuid, 0L) > now;
+            case "sword3" -> combat.hypersonicActive.getOrDefault(uuid, 0L) > now;
+            case "sword4" -> combat.lurkerActive.getOrDefault(uuid, 0L) > now;
+            case "sword5" -> combat.decreeActive.getOrDefault(uuid, 0L) > now;
+            default -> false;
+        };
     }
 }
