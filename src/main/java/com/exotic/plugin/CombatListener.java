@@ -27,6 +27,13 @@ public class CombatListener implements Listener {
     public final Map<UUID, Long> hypersonicActive = new HashMap<>();
     // sword4 passive: wielder -> total landed hits with sword4 (resets each 7th)
     private final Map<UUID, Integer> shadowsHitCount = new HashMap<>();
+    // tome1 ability: entities currently frozen by Ice Age - can't attack while frozen
+    public final Set<UUID> frozen = new HashSet<>();
+
+    // Shared "ability currently active" windows, used only for the HUD (Active) indicator.
+    public final Map<UUID, Long> swarmActive = new HashMap<>();  // sword2
+    public final Map<UUID, Long> lurkerActive = new HashMap<>(); // sword4
+    public final Map<UUID, Long> decreeActive = new HashMap<>(); // sword5
 
     private static final List<PotionEffectType> POSITIVE_POOL = List.of(
             PotionEffectType.SPEED, PotionEffectType.HASTE, PotionEffectType.STRENGTH,
@@ -51,6 +58,12 @@ public class CombatListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onDamage(EntityDamageByEntityEvent event) {
+        // --- Tome of Subzero: frozen entities can't land attacks ---
+        if (frozen.contains(event.getDamager().getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (!(event.getEntity() instanceof Player victim)) return;
 
         // --- Karmic Retribution: invincibility + reflect ---
@@ -60,10 +73,13 @@ public class CombatListener implements Listener {
             event.setCancelled(true);
 
             if (event.getDamager() instanceof org.bukkit.entity.LivingEntity attacker) {
+                // Guard keyed by the attacker's own UUID - prevents two retribution-active
+                // players from reflecting the same hit back and forth infinitely.
                 if (!reflecting.contains(attacker.getUniqueId())) {
-                    reflecting.add(victim.getUniqueId());
+                    reflecting.add(attacker.getUniqueId());
+                    attacker.setNoDamageTicks(0); // ensure the reflected hit isn't swallowed by hurt-invulnerability
                     attacker.damage(dealt, victim);
-                    reflecting.remove(victim.getUniqueId());
+                    reflecting.remove(attacker.getUniqueId());
                 }
             }
             return;
@@ -104,13 +120,20 @@ public class CombatListener implements Listener {
         }
     }
 
-    /** Reset karma counter for victim->attacker when victim hits back. */
+    /**
+     * Reset the karma counter for victim->attacker when the VICTIM hits back.
+     * Fixed: previously looked up the wrong player's counter map entirely,
+     * so retaliating never cleared anything.
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onRetaliate(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player retaliator)) return;
-        if (!(event.getEntity() instanceof Player originalAttacker)) return;
-        Map<UUID, Integer> perAttacker = karmaCounters.get(originalAttacker.getUniqueId());
-        if (perAttacker != null) perAttacker.remove(retaliator.getUniqueId());
+        if (!(event.getEntity() instanceof Player target)) return;
+
+        // retaliator is now hitting target - if retaliator has a karma counter
+        // tracking hits taken FROM target, clear it.
+        Map<UUID, Integer> retaliatorCounters = karmaCounters.get(retaliator.getUniqueId());
+        if (retaliatorCounters != null) retaliatorCounters.remove(target.getUniqueId());
     }
 
     private void applyRandom(Player target, List<PotionEffectType> pool) {
