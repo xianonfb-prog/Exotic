@@ -4,14 +4,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ScoreboardManager {
 
     private final ExoticPlugin plugin;
     private final Map<java.util.UUID, Scoreboard> boards = new HashMap<>();
-    private Team hiddenNameTeam;
 
     public ScoreboardManager(ExoticPlugin plugin) {
         this.plugin = plugin;
@@ -31,28 +32,34 @@ public class ScoreboardManager {
         Objective obj = board.getObjective("exotic_trial");
         if (obj != null) obj.unregister();
         obj = board.registerNewObjective("exotic_trial", Criteria.DUMMY,
-                net.kyori.adventure.text.Component.text("§6§lExotic Trial"));
+                net.kyori.adventure.text.Component.text("§6§l" + TextStyle.toSmallCaps("Exotic Trial")));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        SwordType type = SwordType.byId(trial.swordId);
-        int line = trial.progress.size() + 1;
-        obj.getScore("§f" + type.displayName()).setScore(line--);
-        obj.getScore("§7 ").setScore(line--);
+        ExoticItem item = ExoticItem.byId(trial.swordId);
+        Map<TrialSystem.ObjectiveType, Integer> required = TrialSystem.REQUIREMENTS.get(trial.swordId);
+
+        List<String> lines = new ArrayList<>();
+        lines.add("§f§l" + TextStyle.toSmallCaps(item.displayName()));
+        lines.add("§7§m----------------");
 
         for (var entry : trial.progress.entrySet()) {
-            int required = TrialSystem.REQUIREMENTS.get(trial.swordId).get(entry.getKey());
-            String text = "§e" + entry.getKey().label + ": §f" + entry.getValue() + "§7/§f" + required;
-            // Scoreboard entries must be unique strings; pad with invisible color codes if needed.
-            obj.getScore(uniqueEntry(text, line)).setScore(line--);
+            int need = required.get(entry.getKey());
+            int have = entry.getValue();
+            boolean done = have >= need;
+            String bullet = done ? "§a\u2714 " : "§e\u27A4 ";
+            String amount = (done ? "§a" : "§f") + have + "§7/§f" + need;
+            lines.add(bullet + "§7" + entry.getKey().label + ": " + amount);
+        }
+
+        int score = lines.size();
+        for (int i = 0; i < lines.size(); i++) {
+            // Append an invisible unique color-code suffix so identical-looking
+            // lines never collide as scoreboard entries (Bukkit requires unique strings).
+            String uniqueSuffix = "§" + Integer.toHexString(i % 16) + "§r";
+            obj.getScore(lines.get(i) + uniqueSuffix).setScore(score--);
         }
 
         player.setScoreboard(board);
-    }
-
-    private final Map<String, String> entryCache = new HashMap<>();
-    private String uniqueEntry(String text, int line) {
-        // Ensure uniqueness across lines without changing visible text meaningfully.
-        return text.length() > 40 ? text.substring(0, 40) : text;
     }
 
     /** Temporarily hides a player's nametag for the given duration (Lurker ability). */
