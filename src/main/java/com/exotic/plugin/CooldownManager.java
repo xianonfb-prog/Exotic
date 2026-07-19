@@ -11,10 +11,11 @@ public class CooldownManager {
 
     public static final Map<String, Long> ABILITY_COOLDOWN_MS = Map.of(
             "sword1", 5 * 60 * 1000L,
-            "sword2", 3 * 60 * 1000L,
-            "sword3", 6 * 60 * 1000L,
+            "sword2", 4 * 60 * 1000L,
+            "sword3", 5 * 60 * 1000L,
             "sword4", 4 * 60 * 1000L,
-            "sword5", 5 * 60 * 1000L
+            "sword5", 5 * 60 * 1000L,
+            "tome1", 1 * 60 * 1000L
     );
 
     public boolean isOnCooldown(UUID player, String swordId) {
