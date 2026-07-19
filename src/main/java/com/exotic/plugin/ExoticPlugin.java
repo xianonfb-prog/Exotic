@@ -22,9 +22,9 @@ public class ExoticPlugin extends JavaPlugin {
         getCommand("exotic").setExecutor(handler);
         getCommand("exotic").setTabCompleter(handler);
 
-        new PassiveTickTask(this).runTaskTimer(this, 20L, 20L);
+        new PassiveTickTask(this, combat).runTaskTimer(this, 20L, 20L);
 
-        getLogger().info("Exotic enabled - 5 swords loaded.");
+        getLogger().info("Exotic enabled - 5 swords + Tome of Subzero loaded.");
     }
 
     @Override
