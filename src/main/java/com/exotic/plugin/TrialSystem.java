@@ -15,7 +15,8 @@ public class TrialSystem {
         VILLAGER_KILLS("Villagers Slain"),
         CATS_TAMED("Cats Tamed"),
         SPEED_POTIONS_DRUNK("Speed Potions Drunk"),
-        INVIS_POTIONS_DRUNK("Invisibility Potions Drunk");
+        INVIS_POTIONS_DRUNK("Invisibility Potions Drunk"),
+        ICE_BLOCKS_COLLECTED("Ice Blocks Collected");
 
         public final String label;
         ObjectiveType(String label) { this.label = label; }
@@ -44,6 +45,10 @@ public class TrialSystem {
         Map<ObjectiveType, Integer> s5 = new LinkedHashMap<>();
         s5.put(ObjectiveType.RAID_WON, 5);
         REQUIREMENTS.put("sword5", s5);
+
+        Map<ObjectiveType, Integer> t1 = new LinkedHashMap<>();
+        t1.put(ObjectiveType.ICE_BLOCKS_COLLECTED, 700);
+        REQUIREMENTS.put("tome1", t1);
     }
 
     public static class ActiveTrial {
@@ -81,7 +86,7 @@ public class TrialSystem {
         return active.get(player.getUniqueId());
     }
 
-    public boolean start(Player player, SwordType type) {
+    public boolean start(Player player, ExoticItem type) {
         if (hasActiveTrial(player)) return false;
         active.put(player.getUniqueId(), new ActiveTrial(type.id()));
         player.sendMessage(Component.text("Your trial for ", NamedTextColor.YELLOW)
@@ -94,7 +99,7 @@ public class TrialSystem {
         active.remove(player.getUniqueId());
     }
 
-    /** Manually complete a MANUAL-style trial (not currently used by any of the 5 swords, kept for future use). */
+    /** Manually complete a MANUAL-style trial (kept for future use). */
     public void forceComplete(Player player) {
         ActiveTrial trial = active.get(player.getUniqueId());
         if (trial == null) return;
@@ -119,16 +124,16 @@ public class TrialSystem {
         ActiveTrial trial = active.get(player.getUniqueId());
         if (trial == null || !trial.isComplete()) return;
 
-        SwordType type = SwordType.byId(trial.swordId);
         active.remove(player.getUniqueId());
 
-        player.getInventory().addItem(type.build());
+        ExoticItem item = ExoticItem.byId(trial.swordId);
+        player.getInventory().addItem(item.build());
         player.sendMessage(Component.text("Trial complete! You have received ", NamedTextColor.GREEN)
-                .append(Component.text(type.displayName(), NamedTextColor.GOLD).decorate(TextDecoration.BOLD))
+                .append(Component.text(item.displayName(), NamedTextColor.GOLD).decorate(TextDecoration.BOLD))
                 .append(Component.text(".", NamedTextColor.GREEN)));
 
-        // Vague global announcement tied to the sword
-        Bukkit.broadcast(Component.text(type.announcement(), NamedTextColor.DARK_GRAY)
+        // Vague global announcement tied to the item
+        Bukkit.broadcast(Component.text(item.announcement(), NamedTextColor.DARK_GRAY)
                 .decorate(TextDecoration.ITALIC));
     }
 }
