@@ -34,9 +34,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Usage: /exotic trial <swordId> <player>", NamedTextColor.RED));
                     return true;
                 }
-                SwordType type = SwordType.byId(args[1]);
-                if (type == null) {
-                    sender.sendMessage(Component.text("Unknown sword id: " + args[1], NamedTextColor.RED));
+                ExoticItem item = ExoticItem.byId(args[1]);
+                if (item == null) {
+                    sender.sendMessage(Component.text("Unknown item id: " + args[1], NamedTextColor.RED));
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[2]);
@@ -44,9 +44,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Player not found or offline: " + args[2], NamedTextColor.RED));
                     return true;
                 }
-                boolean started = plugin.trials().start(target, type);
+                boolean started = plugin.trials().start(target, item);
                 if (started) {
-                    sender.sendMessage(Component.text("Started " + type.displayName() + " trial for " + target.getName(), NamedTextColor.GREEN));
+                    sender.sendMessage(Component.text("Started " + item.displayName() + " trial for " + target.getName(), NamedTextColor.GREEN));
                 } else {
                     sender.sendMessage(Component.text(target.getName() + " already has an active trial.", NamedTextColor.RED));
                 }
@@ -85,9 +85,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Usage: /exotic give <swordId> <player>", NamedTextColor.RED));
                     return true;
                 }
-                SwordType type = SwordType.byId(args[1]);
+                ExoticItem type = ExoticItem.byId(args[1]);
                 if (type == null) {
-                    sender.sendMessage(Component.text("Unknown sword id: " + args[1], NamedTextColor.RED));
+                    sender.sendMessage(Component.text("Unknown item id: " + args[1], NamedTextColor.RED));
                     return true;
                 }
                 Player target = Bukkit.getPlayerExact(args[2]);
@@ -100,9 +100,12 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                 return true;
             }
             case "list" -> {
-                sender.sendMessage(Component.text("Exotic swords:", NamedTextColor.GOLD));
-                for (SwordType type : SwordType.values()) {
-                    sender.sendMessage(Component.text(" - " + type.id() + ": " + type.displayName(), NamedTextColor.GRAY));
+                sender.sendMessage(Component.text("Exotic items:", NamedTextColor.GOLD));
+                for (SwordType st : SwordType.values()) {
+                    sender.sendMessage(Component.text(" - " + st.id() + ": " + st.displayName(), NamedTextColor.GRAY));
+                }
+                for (TomeType tt : TomeType.values()) {
+                    sender.sendMessage(Component.text(" - " + tt.id() + ": " + tt.displayName(), NamedTextColor.GRAY));
                 }
                 return true;
             }
@@ -120,6 +123,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             options.addAll(List.of("trial", "cancel", "complete", "give", "list"));
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("trial") || args[0].equalsIgnoreCase("give"))) {
             for (SwordType type : SwordType.values()) options.add(type.id());
+            for (TomeType type : TomeType.values()) options.add(type.id());
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("complete"))) {
             Bukkit.getOnlinePlayers().forEach(p -> options.add(p.getName()));
         } else if (args.length == 3 && (args[0].equalsIgnoreCase("trial") || args[0].equalsIgnoreCase("give"))) {
