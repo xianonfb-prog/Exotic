@@ -17,12 +17,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * All 5 Exotic swords: identity, fixed base stats, and lore.
- * Every sword shares: 8 Attack Damage, 1.6 Attack Speed, Unbreakable,
- * Sharpness V, Fire Aspect II, non-renameable (enforced in listener), and lore.
- */
-public enum SwordType {
+public enum SwordType implements ExoticItem {
 
     SWORD1("sword1", "Judgement", Material.NETHERITE_SWORD, NamedTextColor.WHITE,
             List.of("The Equalization, Karma."),
@@ -81,7 +76,7 @@ public enum SwordType {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.displayName(Component.text(displayName, color)
+        meta.displayName(Component.text(TextStyle.toSmallCaps(displayName), color)
                 .decoration(TextDecoration.BOLD, true)
                 .decoration(TextDecoration.ITALIC, false));
 
